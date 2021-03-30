@@ -12,16 +12,13 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
-import os
 from scipy import stats
-from matplotlib.gridspec import GridSpec
 from scipy.stats import norm
 import math
-from numpy import matlib as mb
-from scipy.cluster.hierarchy import linkage, dendrogram
-from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import AgglomerativeClustering
 import scipy.io
+from numpy import matlib as mb
+
 Z = norm.ppf
 
 def CalculateEffect(data1,data2):
@@ -118,34 +115,30 @@ def MakeData(DATA):
 ##############
 # parameters #
 ##############
-dummy = 0
 tr=1.08
-save_flag=1
 performance_list = ['CommissionError', 'CorrectCommission', 'CorrectOmission', 'OmissionError', 'In_the_Zone', 'VarianceTimeCourse','ReactionTime_Interpolated','ThoughtProbe_Interpolated']
 
-top_dir = 'C:/Users/ayumu/Dropbox/gradCPT/'
-source_dir = top_dir + 'data/GradCPT_MindWandering/MRI/'
-basin_dir = top_dir + 'data/GradCPT_MindWandering/EnergyLandscape/'
+top_dir = 'C:/Users/ayumu/Dropbox/gradCPT/code/BrainStateSustainedAttention/'
+roi_dir = top_dir + 'Parcellations/'
 
-# ## Schaefer400_7Net
-# roi = 'Schaefer400_7Net'
-# roi_dir = 'C:/Users/ayumu/Dropbox/gradCPT/Parcellations/' + roi + '/'
-# ROI_files = pd.read_csv(roi_dir + 'Schaefer400_7Net.csv')
-# roiname = ROI_files.Network
-# network = np.unique(roiname)
-# net_order = ['DefaultMode', 'Limbic', 'PrefrontalControl','DorsalAttention','Salience','SomatoMotor','Visual']
-
-## Schaefer400_8Net
-roi = 'Schaefer400_8Net'
-roi_dir = 'C:/Users/ayumu/Dropbox/gradCPT/Parcellations/' + roi + '/'
-ROI_files = pd.read_csv(roi_dir + 'Schaefer400_8Net.csv')
-roiname = ROI_files.Network
-network = np.unique(roiname)
-net_order = ['DefaultMode', 'Limbic', 'PrefrontalControlB', 'PrefrontalControlA','DorsalAttention','Salience','SomatoMotor','Visual']
+data_hc_dir = top_dir + 'data/Dataset2/'
+events_hc_dir = data_hc_dir + 'events/'
+basin_hc_dir = data_hc_dir + 'energylandscape/'
+subs_hc =  pd.read_csv(glob.glob(data_hc_dir + '/participants_HC.tsv')[0],delimiter='\t')['participants_id']
+sub_num_hc = len(subs_hc)
 
 
-fig_dir = top_dir + 'fig/GradCPT_MindWandering/EnergyLandscape/' + roi +'/ADHD/'
-if os.path.isdir(fig_dir)==False: os.mkdir(fig_dir)
+data_adhd_dir = top_dir + 'data/Dataset3/'
+events_adhd_dir = data_adhd_dir + 'events/'
+basin_adhd_dir = data_adhd_dir + 'energylandscape/'
+subs_adhd =  pd.read_csv(glob.glob(data_adhd_dir + '/participants_ADHD.tsv')[0],delimiter='\t')['participants_id']
+sub_num_adhd = len(subs_adhd)
+
+net_order = ['DefaultMode', 'Limbic', 'PrefrontalControl','DorsalAttention','Salience','SomatoMotor','Visual']
+roi = 'Schaefer400_7Net'
+# roi = 'Schaefer400_8Net'
+# roi = 'Yeo_7Net'
+network = list(pd.read_csv(roi_dir + roi + '.txt',header=None)[0])
 
 metric='hamming'
 method='complete'
@@ -156,7 +149,7 @@ ac = AgglomerativeClustering(n_clusters=n_clusters,
                             affinity=metric,
                             linkage=method)
 
-mat = scipy.io.loadmat(basin_dir + roi + '/HC_onlyMW/LocalMin_Summary.mat')
+mat = scipy.io.loadmat(basin_hc_dir + roi + '/LocalMin_Summary.mat')
 tmp = np.reshape(mat['vectorList'][:,mat['LocalMinIndex']-1],[len(mat['vectorList']),len(mat['LocalMinIndex'])])
 brain_activity_pattern_HC = pd.DataFrame(tmp,index=network)
 brain_activity_pattern_HC.columns = ['State 1','State 2']
@@ -169,16 +162,13 @@ fig0 = plt.figure(figsize=(12,6))
 fig0 = sns.heatmap(all_brain_activity_pattern_HC.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig0.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1] for e in row], fontsize=15)
 fig0.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_HC.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_HC.png')
+
 fig1 = plt.figure(figsize=(12,6))
 fig1 = sns.heatmap(all_brain_activity_pattern_HC.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig1.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1] for e in row], fontsize=15)
 fig1.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_HC.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_HC.png')
 
-mat = scipy.io.loadmat(basin_dir + roi + '/ADHD_onlyMW/LocalMin_Summary.mat')
+mat = scipy.io.loadmat(basin_adhd_dir + roi + '/LocalMin_Summary.mat')
 tmp = np.reshape(mat['vectorList'][:,mat['LocalMinIndex']-1],[len(mat['vectorList']),len(mat['LocalMinIndex'])])
 brain_activity_pattern_ADHD = pd.DataFrame(tmp,index=network)
 brain_activity_pattern_ADHD = pd.DataFrame(tmp,index=network)
@@ -192,40 +182,29 @@ fig0 = plt.figure(figsize=(12,6))
 fig0 = sns.heatmap(all_brain_activity_pattern_ADHD.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig0.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1] for e in row], fontsize=15)
 fig0.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_ADHD.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_ADHD.png')
+
 fig1 = plt.figure(figsize=(12,6))
 fig1 = sns.heatmap(all_brain_activity_pattern_ADHD.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig1.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1] for e in row], fontsize=15)
 fig1.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_ADHD.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_ADHD.png')
 
 cluster_HC = ac.fit_predict(brain_activity_pattern_HC.T)
 cluster_ADHD = ac.fit_predict(brain_activity_pattern_ADHD.T)
 
 
-
-# demographic data
-demo = pd.read_csv(glob.glob(top_dir + '/code/participants_HC.tsv')[0],delimiter='\t')
-subs = demo['participants_id']
-sub_num_hc = len(subs)
-
 # extract signals
 DATA_HC = pd.DataFrame()
-for sub_i in subs:
-    nv_files = glob.glob(source_dir + sub_i + '*task-gradCPTMW*_desc-confounds_regressors.tsv');nv_files.sort()
-    task_files = glob.glob(source_dir + sub_i +'*task-gradCPTMW*events.tsv');task_files.sort()
-    data_files = glob.glob(basin_dir + roi + '/HC_onlyMW/*' + sub_i + '*_BN.csv');data_files.sort()
+for sub_i in subs_hc:
+    task_files = glob.glob(events_hc_dir + sub_i +'*task-gradCPTMW*events.tsv');task_files.sort()
+    data_files = glob.glob(basin_hc_dir + roi + '/*' + sub_i + '*_BN.csv');data_files.sort()
 
     DATA_sub = pd.DataFrame()
     state_run = pd.Series()
     sessions = pd.Series()
     for num_file_i,file_i in enumerate(task_files):
         taskinfo = pd.read_csv(file_i,delimiter='\t')
-        nv = pd.read_csv(nv_files[num_file_i], delimiter='\t')
         data = pd.read_csv(data_files[num_file_i],header=None)
-        num_vol = nv.shape[0]
+        num_vol = data.shape[0]
         for onset_time in taskinfo['onset']:
             belong = CheckWhere(num_vol,tr,onset_time)
             state_run = state_run.append(data[belong].iloc[0])
@@ -263,8 +242,6 @@ fig.set_ylim(0,65)
 fig.set_ylabel("Percentage of total time", fontsize=15)
 fig.legend('')
 fig.set_xlabel("", fontsize=15) 
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_HC.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_HC.png')
 
 ## State comparison
 ZONEDATA_HC = DATA_HC.groupby(['subid','summary_state'])['In_the_Zone'].value_counts().unstack().fillna(0).apply(lambda x:sum(x),axis=1).unstack().fillna(0).apply(lambda x:100*x/sum(x),axis=1)
@@ -273,27 +250,20 @@ NEWDATA_HC['State 1'] = ZONEDATA_HC[0]
 NEWDATA_HC['State 2'] = ZONEDATA_HC[1]
 DATA_scat_hc = pd.melt(NEWDATA_HC)
 DATA_scat_hc['DIAGNOSIS'] = np.matlib.repmat('HC', sub_num_hc*2,1)
-DATA_scat_hc['SUBID'] = np.matlib.repmat(subs, 1,2)[0]
-
-## Analysis for ADHD
-demo = pd.read_csv(glob.glob(top_dir + '/code/participants_ADHD.tsv')[0],delimiter='\t')
-subs = demo['participants_id']
-sub_num_adhd = len(subs)
+DATA_scat_hc['SUBID'] = np.matlib.repmat(subs_hc, 1,2)[0]
 
 # extract signals
 DATA_ADHD = pd.DataFrame()
-for sub_i in subs:
-    nv_files = glob.glob(source_dir + sub_i + '*task-gradCPTMW*_desc-confounds_regressors.tsv');nv_files.sort()
-    task_files = glob.glob(source_dir + sub_i +'*task-gradCPTMW*events.tsv');task_files.sort()
-    data_files = glob.glob(basin_dir + roi + '/ADHD_onlyMW/*' + sub_i + '*_BN.csv');data_files.sort()
+for sub_i in subs_adhd:
+    task_files = glob.glob(events_adhd_dir + sub_i +'*task-gradCPTMW*events.tsv');task_files.sort()
+    data_files = glob.glob(basin_adhd_dir + roi + '/*' + sub_i + '*_BN.csv');data_files.sort()
     DATA_sub = pd.DataFrame()
     state_run = pd.Series()
     sessions = pd.Series()
     for num_file_i,file_i in enumerate(task_files):
         taskinfo = pd.read_csv(file_i,delimiter='\t')
-        nv = pd.read_csv(nv_files[num_file_i], delimiter='\t')
         data = pd.read_csv(data_files[num_file_i],header=None)
-        num_vol = nv.shape[0]
+        num_vol = data.shape[0]
         for onset_time in taskinfo['onset']:
             belong = CheckWhere(num_vol,tr,onset_time)
             state_run = state_run.append(data[belong].iloc[0])
@@ -330,9 +300,6 @@ fig.set_ylim(0,65)
 fig.set_ylabel("Percentage of total time", fontsize=15)
 fig.legend('')
 fig.set_xlabel("", fontsize=15) 
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_ADHD.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_ADHD.png')
-
 
 ## State comparison
 ZONEDATA_ADHD = DATA_ADHD.groupby(['subid','summary_state'])['In_the_Zone'].value_counts().unstack().fillna(0).apply(lambda x:sum(x),axis=1).unstack().fillna(0).apply(lambda x:100*x/sum(x),axis=1)
@@ -341,17 +308,13 @@ NEWDATA_ADHD['State 1'] = ZONEDATA_ADHD[0]
 NEWDATA_ADHD['State 2'] = ZONEDATA_ADHD[1]
 DATA_scat_adhd = pd.melt(NEWDATA_ADHD)
 DATA_scat_adhd['DIAGNOSIS'] = np.matlib.repmat('ADHD', sub_num_adhd*2,1)
-DATA_scat_adhd['SUBID'] = np.matlib.repmat(subs, 1,2)[0]
+DATA_scat_adhd['SUBID'] = np.matlib.repmat(subs_adhd, 1,2)[0]
 
 
 DATA_scat = pd.concat([DATA_scat_hc,DATA_scat_adhd])
-# print(stats.mannwhitneyu(DATA_scat_adhd.query('variable=="State 1"')["value"],DATA_scat_hc.query('variable=="State 1"')["value"]))
 
 DATA_scat_vtc_ADHD, DATA_scat_RT_ADHD, DATA_scat_dprime_ADHD,DATA_scat_MW_ADHD = MakeData(DATA_ADHD)
 DATA_scat_vtc_HC, DATA_scat_RT_HC, DATA_scat_dprime_HC,DATA_scat_MW_HC = MakeData(DATA_HC)
-# print(stats.wilcoxon(DATA_scat_vtc_ADHD.query('variable=="State 1"')["value"],DATA_scat_vtc_ADHD.query('variable=="State 2"')["value"]))
-# print(stats.wilcoxon(DATA_scat_RT_ADHD.query('variable=="State 1"')["value"],DATA_scat_RT_ADHD.query('variable=="State 2"')["value"]))
-# print(stats.wilcoxon(DATA_scat_dprime_ADHD.query('variable=="State 1"')["value"],DATA_scat_dprime_ADHD.query('variable=="State 2"')["value"]))
 
 DATA_scat['VTC'] = np.append(DATA_scat_vtc_HC.value,DATA_scat_vtc_ADHD.value,axis=0)
 DATA_scat['RT'] = np.append(DATA_scat_RT_HC.value,DATA_scat_RT_ADHD.value,axis=0)
@@ -397,27 +360,15 @@ ax1.legend_ = None
 ax.set_ylabel("MW score", fontsize=20) #title
 ax.set_xlabel("") #title
 plt.rc('xtick',labelsize=20)
-# ax.set_ylim(0, 6)
-if save_flag==1:plt.savefig(fig_dir + 'CompareResults_ADHD.pdf')
-if save_flag==1:plt.savefig(fig_dir + 'CompareResults_ADHD.png')
-
-### Statistical analysis
-DATA_scat.to_csv(top_dir + 'code/EnergyLandscape/ForPaper/DATA_ADHD_comparison.csv',columns=None)
 
 import statsmodels.api as sm
-# model = sm.MixedLM.from_formula("value ~ variable*DIAGNOSIS", DATA_scat, groups=DATA_scat["SUBID"]).fit().summary()
+model = sm.MixedLM.from_formula("value ~ variable*DIAGNOSIS", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
 # model = sm.MixedLM.from_formula("VTC ~ variable*DIAGNOSIS", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
 # model = sm.MixedLM.from_formula("RT ~ variable*DIAGNOSIS", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
 # model = sm.MixedLM.from_formula("dprime ~ variable*DIAGNOSIS", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
-model = sm.MixedLM.from_formula("MW ~ variable*DIAGNOSIS", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
+# model = sm.MixedLM.from_formula("MW ~ variable*DIAGNOSIS", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
 print('p value for interaction was %s' %model.tables[1].iloc[3,3])
 print(model)
-
-# print(stats.ttest_rel(DATA_scat_hc.query('variable=="State 1"')["value"],DATA_scat_hc.query('variable=="State 2"')["value"]))
-# print(stats.ttest_rel(DATA_scat_vtc_HC.query('variable=="State 1"')["value"],DATA_scat_vtc_HC.query('variable=="State 2"')["value"]))
-# print(stats.ttest_rel(DATA_scat_RT_HC.query('variable=="State 1"')["value"],DATA_scat_RT_HC.query('variable=="State 2"')["value"]))
-# print(stats.ttest_rel(DATA_scat_dprime_HC.query('variable=="State 1"')["value"],DATA_scat_dprime_HC.query('variable=="State 2"')["value"]))
-# print(stats.ttest_rel(DATA_scat_MW_HC.query('variable=="State 1"')["value"],DATA_scat_MW_HC.query('variable=="State 2"')["value"]))
 
 d_state_hc = CalculateEffect(DATA_scat_hc.query('variable=="State 1"')["value"].reset_index(drop=True),DATA_scat_hc.query('variable=="State 2"')["value"].reset_index(drop=True))
 print(stats.ttest_rel(DATA_scat_hc.query('variable=="State 1"')["value"],DATA_scat_hc.query('variable=="State 2"')["value"]),d_state_hc)
@@ -436,10 +387,3 @@ print(stats.ttest_rel(DATA_scat_dprime_ADHD.query('variable=="State 1"')["value"
 
 d_mw = CalculateEffect(DATA_scat_MW_ADHD.query('variable=="State 1"')["value"].reset_index(drop=True),DATA_scat_MW_ADHD.query('variable=="State 2"')["value"].reset_index(drop=True))
 print(stats.ttest_rel(DATA_scat_MW_ADHD.query('variable=="State 1"')["value"],DATA_scat_MW_ADHD.query('variable=="State 2"')["value"]),d_mw)
-
-
-
-hc_res_state1 = DATA_scat_dprime_HC.query('variable=="State 1"')["value"].reset_index(drop=True)
-hc_res_state2 = DATA_scat_dprime_HC.query('variable=="State 2"')["value"].reset_index(drop=True)
-adhd_res_state1 = DATA_scat_dprime_ADHD.query('variable=="State 1"')["value"].reset_index(drop=True)
-adhd_res_state2 = DATA_scat_dprime_ADHD.query('variable=="State 2"')["value"].reset_index(drop=True)

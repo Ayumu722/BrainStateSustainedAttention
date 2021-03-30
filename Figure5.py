@@ -12,16 +12,13 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
-import os
 from scipy import stats
-from matplotlib.gridspec import GridSpec
 from scipy.stats import norm
 import math
-from numpy import matlib as mb
-from scipy.cluster.hierarchy import linkage, dendrogram
-from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import AgglomerativeClustering
 import scipy.io
+from numpy import matlib as mb
+
 Z = norm.ppf
 
 def CalculateEffect(data1,data2):
@@ -112,33 +109,24 @@ def MakeData(DATA,outname):
 ##############
 # parameters #
 ##############
-dummy = 0
 tr=2.0
-save_flag = 0
 performance_list = ['CommissionError', 'CorrectCommission', 'CorrectOmission', 'OmissionError', 'In_the_Zone', 'VarianceTimeCourse','ReactionTime_Interpolated']
 
-top_dir = 'C:/Users/ayumu/Dropbox/gradCPT/'
-source_dir = top_dir + 'data/GradCPT_reward/MRI/'
-basin_dir = top_dir + 'data/GradCPT_reward/EnergyLandscape/'
+top_dir = 'C:/Users/ayumu/Dropbox/gradCPT/code/BrainStateSustainedAttention/'
+data_dir = top_dir + 'data/Dataset4/'
+events_dir = data_dir + 'events/'
+basin_dir = data_dir + 'energylandscape/'
+roi_dir = top_dir + 'Parcellations/'
 
-# ## Schaefer400_7Net
-# roi = 'Schaefer400_7Net'
-# roi_dir = 'C:/Users/ayumu/Dropbox/gradCPT/Parcellations/' + roi + '/'
-# ROI_files = pd.read_csv(roi_dir + 'Schaefer400_7Net.csv')
-# roiname = ROI_files.Network
-# network = np.unique(roiname)
-# net_order = ['DefaultMode', 'Limbic', 'PrefrontalControl','DorsalAttention','Salience','SomatoMotor','Visual']
+# demographic data
+demo = pd.read_csv(glob.glob(data_dir + 'participants_reward.tsv')[0],delimiter='\t')
+subs = demo['participants_id']
 
-## Schaefer400_8Net
-roi = 'Schaefer400_8Net'
-roi_dir = 'C:/Users/ayumu/Dropbox/gradCPT/Parcellations/' + roi + '/'
-ROI_files = pd.read_csv(roi_dir + 'Schaefer400_8Net.csv')
-roiname = ROI_files.Network
-network = np.unique(roiname)
-net_order = ['DefaultMode', 'Limbic', 'PrefrontalControlB', 'PrefrontalControlA','DorsalAttention','Salience','SomatoMotor','Visual']
-
-fig_dir = top_dir + 'fig/GradCPT_reward/EnergyLandscape/' + roi
-if os.path.isdir(fig_dir)==False: os.mkdir(fig_dir)
+net_order = ['DefaultMode', 'Limbic', 'PrefrontalControl','DorsalAttention','Salience','SomatoMotor','Visual']
+roi = 'Schaefer400_7Net'
+# roi = 'Schaefer400_8Net'
+# roi = 'Yeo_7Net'
+network = list(pd.read_csv(roi_dir + roi + '.txt',header=None)[0])
 
 metric='hamming'
 method='complete'
@@ -162,15 +150,11 @@ fig0 = plt.figure(figsize=(12,6))
 fig0 = sns.heatmap(all_brain_activity_pattern_reward.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig0.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1] for e in row], fontsize=15)
 fig0.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_reward.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_reward.png')
+
 fig1 = plt.figure(figsize=(12,6))
 fig1 = sns.heatmap(all_brain_activity_pattern_reward.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig1.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1] for e in row], fontsize=15)
 fig1.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_reward.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_reward.png')
-
 
 mat = scipy.io.loadmat(basin_dir + roi + '/nonreward/LocalMin_Summary.mat')
 tmp = np.reshape(mat['vectorList'][:,mat['LocalMinIndex']-1],[len(mat['vectorList']),len(mat['LocalMinIndex'])])
@@ -185,21 +169,16 @@ fig0 = plt.figure(figsize=(12,6))
 fig0 = sns.heatmap(all_brain_activity_pattern_nonreward.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig0.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1] for e in row], fontsize=15)
 fig0.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_nonreward.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1_nonreward.png')
+
 fig1 = plt.figure(figsize=(12,6))
 fig1 = sns.heatmap(all_brain_activity_pattern_nonreward.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig1.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1] for e in row], fontsize=15)
 fig1.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_nonreward.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2_nonreward.png')
 
 cluster_reward = ac.fit_predict(brain_activity_pattern_reward.T)
 cluster_nonreward = ac.fit_predict(brain_activity_pattern_nonreward.T)
 
 # demographic data
-demo = pd.read_csv(glob.glob(top_dir + '/code/participants_reward.tsv')[0],delimiter='\t')
-subs = demo['participants_id']
 REWARD = pd.DataFrame({'reward1':demo.reward1,'reward2':demo.reward2,'reward3':demo.reward3,'reward4':demo.reward4,'reward5':demo.reward5})
 REWARD.index=subs
 
@@ -210,8 +189,7 @@ start_vol_reward = 0
 start_vol_nonreward = 6
 
 for num_sub_i,sub_i in enumerate(subs):
-    nv_files = glob.glob(source_dir + sub_i + '*task-gradCPT*_desc-confounds_regressors.tsv');nv_files.sort()
-    task_files = glob.glob(source_dir + sub_i +'*task-gradCPT*events.tsv');task_files.sort()
+    task_files = glob.glob(events_dir + sub_i +'*task-gradCPT*events.tsv');task_files.sort()
     data_reward_files = glob.glob(basin_dir + roi + '/reward/*' + sub_i + '*_BN.csv');data_reward_files.sort()
     data_nonreward_files = glob.glob(basin_dir + roi + '/nonreward/*' + sub_i + '*_BN.csv');data_nonreward_files.sort()
     DATA_sub_reward = pd.DataFrame()
@@ -220,15 +198,14 @@ for num_sub_i,sub_i in enumerate(subs):
     state_run_nonreward = pd.Series()
     for num_file_i,file_i in enumerate(task_files):
         taskinfo = pd.read_csv(file_i,delimiter='\t')
-        nv = pd.read_csv(nv_files[num_file_i], delimiter='\t')
         data_reward = pd.read_csv(data_reward_files[num_file_i],header=None)
         data_nonreward = pd.read_csv(data_nonreward_files[num_file_i],header=None)
         RewardStart = int(REWARD.iloc[num_sub_i,num_file_i])
         RewardTrial = np.zeros(len(taskinfo),)
-        RewardVolume = np.zeros(len(nv),)
-        nonRewardVolume = np.zeros(len(nv),)
-        StateVolume = np.zeros(len(nv),)
-        num_vol = nv.shape[0]
+        num_vol = len(data_reward)+len(data_nonreward)
+        RewardVolume = np.zeros(num_vol,)
+        nonRewardVolume = np.zeros(num_vol,)
+        StateVolume = np.zeros(num_vol,)
         onset = taskinfo['onset']
         if RewardStart:
             RewardTrial[0:75] = 1
@@ -255,20 +232,7 @@ for num_sub_i,sub_i in enumerate(subs):
                     state_run_nonreward = state_run_nonreward.append(pd.Series(data_nonreward[0][start_vol_nonreward+int(sum(nonRewardVolume))-2]))
                 else:
                     state_run_nonreward = state_run_nonreward.append(pd.Series(data_nonreward[0][start_vol_nonreward+int(sum(nonRewardVolume))-1]))                   
-           
-            
-        # StateVolume[RewardVolume==1]=data_reward[0]
-        # StateVolume[RewardVolume==0]=data_nonreward[0]
-        # for num_onset_i,onset_time in enumerate(onset):
-        #     belong = CheckWhere(num_vol,tr,onset_time)
-        #     if RewardTrial[num_onset_i]:
-        #         state_run_reward = state_run_reward.append(pd.Series(StateVolume[belong][0]))                   
-        #     else:
-        #         state_run_nonreward = state_run_nonreward.append(pd.Series(StateVolume[belong][0]))
-                    
-        # num_vol_cum_reward = num_vol_cum_reward + int(sum(RewardVolume))
-        # num_vol_cum_nonreward = num_vol_cum_nonreward + int(sum(RewardVolume==0))
-
+ 
         DATA_sub_reward = DATA_sub_reward.append(taskinfo.loc[RewardTrial==1,performance_list])
         DATA_sub_nonreward = DATA_sub_nonreward.append(taskinfo.loc[RewardTrial==0,performance_list])
     DATA_sub_reward['state'] = state_run_reward.values
@@ -311,9 +275,6 @@ fig.set_ylim(0,60)
 fig.set_ylabel("Percentage of total time", fontsize=15)
 fig.legend('')
 fig.set_xlabel("", fontsize=15) 
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_reward.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_reward.png')
-
 
 ## figure of Duration
 num_state_nonreward = len(pd.unique(DATA_nonreward.state))
@@ -333,9 +294,6 @@ fig.set_ylim(0,60)
 fig.set_ylabel("Percentage of total time", fontsize=15)
 fig.legend('')
 fig.set_xlabel("", fontsize=15) 
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_nonreward.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all_nonreward.png')
-
 
 DATA_scat_vtc_reward, DATA_scat_RT_reward, DATA_scat_dprime_reward = MakeData(DATA_reward,'Reward')
 DATA_scat_vtc_nonreward, DATA_scat_RT_nonreward, DATA_scat_dprime_nonreward = MakeData(DATA_nonreward,'nonReward')
@@ -394,24 +352,13 @@ ax.set_ylabel("d prime", fontsize=20) #title
 ax.set_xlabel("") #title
 plt.tick_params(labelsize=20)
 ax.set_ylim(0, 6)
-if save_flag==1:plt.savefig(fig_dir + '/CompareResults.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/CompareResults.png')
 
 ### Statistical analysis
-DATA_scat.to_csv(top_dir + 'code/EnergyLandscape/ForPaper/DATA_reward_comparison.csv',columns=None)
-
-# print(stats.wilcoxon(DATA_scat.query('variable=="State1_nonreward"')["VTC"],DATA_scat.query('variable=="State2_nonreward"')["VTC"]))
-# print(stats.wilcoxon(DATA_scat.query('variable=="State1_nonreward"')["RT"],DATA_scat.query('variable=="State2_nonreward"')["RT"]))
-# print(stats.wilcoxon(DATA_scat.query('variable=="State1_nonreward"')["dprime"],DATA_scat.query('variable=="State2_nonreward"')["dprime"]))
-# print(stats.wilcoxon(DATA_scat.query('variable=="State1_reward"')["VTC"],DATA_scat.query('variable=="State2_reward"')["VTC"]))
-# print(stats.wilcoxon(DATA_scat.query('variable=="State1_reward"')["RT"],DATA_scat.query('variable=="State2_reward"')["RT"]))
-# print(stats.wilcoxon(DATA_scat.query('variable=="State1_reward"')["dprime"],DATA_scat.query('variable=="State2_reward"')["dprime"]))
-
 import statsmodels.api as sm
-# model = sm.MixedLM.from_formula("value ~ STATE*REWARD", DATA_scat, groups=DATA_scat["SUBID"]).fit().summary()
+model = sm.MixedLM.from_formula("value ~ STATE*REWARD", DATA_scat, groups=DATA_scat["SUBID"]).fit().summary()
 # model = sm.MixedLM.from_formula("VTC ~ STATE*REWARD", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
 # model = sm.MixedLM.from_formula("RT ~ STATE*REWARD", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
-model = sm.MixedLM.from_formula("dprime ~ STATE*REWARD", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
+# model = sm.MixedLM.from_formula("dprime ~ STATE*REWARD", DATA_scat, groups=DATA_scat["SUBID"]).fit(reml=False).summary()
 print('p value for interaction was %s' %model.tables[1].iloc[3,3])
 print(model)
 
@@ -438,4 +385,3 @@ d_dprime_nonreward = CalculateEffect(DATA_scat.query('variable=="State1_nonrewar
 print(stats.ttest_rel(DATA_scat.query('variable=="State1_nonreward"')["dprime"],DATA_scat.query('variable=="State2_nonreward"')["dprime"]),d_dprime_nonreward)
 d_dprime_reward = CalculateEffect(DATA_scat.query('variable=="State1_reward"')["dprime"].reset_index(drop=True),DATA_scat.query('variable=="State2_reward"')["dprime"].reset_index(drop=True))
 print(stats.ttest_rel(DATA_scat.query('variable=="State1_reward"')["dprime"],DATA_scat.query('variable=="State2_reward"')["dprime"]),d_dprime_reward)
-

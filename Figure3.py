@@ -12,13 +12,9 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
-import os
 from scipy import stats
-from matplotlib.gridspec import GridSpec
 from scipy.stats import norm
 import math
-from scipy.cluster.hierarchy import linkage, dendrogram
-from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import AgglomerativeClustering
 import scipy.io
 
@@ -72,50 +68,41 @@ def SDT(hits, misses, fas, crs): # hits, misses, false alarms, correct rejection
     out['beta'] = math.exp((Z(fa_rate)**2 - Z(hit_rate)**2) / 2)
     out['c'] = -(Z(hit_rate) + Z(fa_rate)) / 2
     out['Ad'] = norm.cdf(out['d'] / math.sqrt(2))
+    out['hit_rate'] = hit_rate
+    out['fa_rate'] = fa_rate
     
     return(out)
+
 
 ##############
 # parameters #
 ##############
-dummy = 0
 tr=1.08
-save_flag = 1
-
 performance_list = ['CommissionError', 'CorrectCommission', 'CorrectOmission', 'OmissionError', 'In_the_Zone', 'VarianceTimeCourse','ReactionTime_Interpolated','ThoughtProbe_Interpolated']
+top_dir = 'C:/Users/ayumu/Dropbox/gradCPT/code/BrainStateSustainedAttention/'
+data_dir = top_dir + 'data/Dataset2/'
+events_dir = data_dir + 'events/'
+basin_dir = data_dir + 'energylandscape/'
+roi_dir = top_dir + 'Parcellations/'
 
-top_dir = 'C:/Users/ayumu/Dropbox/gradCPT/'
-source_dir = top_dir + 'data/GradCPT_MindWandering/MRI/'
-basin_dir = top_dir + 'data/GradCPT_MindWandering/EnergyLandscape/'
+# demographic data
+demo = pd.read_csv(glob.glob(data_dir + 'participants_HC.tsv')[0],delimiter='\t')
+subs = demo['participants_id']
 
-# # Schaefer400_7Net
-# roi = 'Schaefer400_7Net'
-# roi_dir = 'C:/Users/ayumu/Dropbox/gradCPT/Parcellations/' + roi + '/'
-# ROI_files = pd.read_csv(roi_dir + 'Schaefer400_7Net.csv')
-# roiname = ROI_files.Network
-# network = np.unique(roiname)
+roi = 'Schaefer400_7Net'
+net_order = ['DefaultMode', 'Limbic', 'PrefrontalControl','DorsalAttention','Salience','SomatoMotor','Visual']
+
+# roi = 'Schaefer400_8Net'
+# net_order = ['DefaultMode', 'Limbic', 'PrefrontalControlB', 'PrefrontalControlA','DorsalAttention','Salience','SomatoMotor','Visual']
+
+# roi = 'Yeo_7Net'
 # net_order = ['DefaultMode', 'Limbic', 'PrefrontalControl','DorsalAttention','Salience','SomatoMotor','Visual']
 
-## Schaefer400_8Net
-roi = 'Schaefer400_8Net'
-roi_dir = 'C:/Users/ayumu/Dropbox/gradCPT/Parcellations/' + roi + '/'
-ROI_files = pd.read_csv(roi_dir + 'Schaefer400_8Net.csv')
-roiname = ROI_files.Network
-network = np.unique(roiname)
-net_order = ['DefaultMode', 'Limbic', 'PrefrontalControlB', 'PrefrontalControlA','DorsalAttention','Salience','SomatoMotor','Visual']
 
-# ## Yeo_7Net
-# roi = 'Yeo_7Net'
-# roi_dir = top_dir + '/Parcellations/' + roi + '/'
-# ROI_files = roi_dir + 'Yeo2011_7Networks_MNI152_FreeSurferConformed1mm.nii.gz'
-# NET_files = pd.read_csv(roi_dir + 'Yeo_7Net.txt',header=None)
-# roiname = NET_files[0]
-# network = list(roiname)
+network = list(pd.read_csv(roi_dir + roi + '.txt',header=None)[0])
 
-fig_dir = top_dir + 'fig/GradCPT_MindWandering/EnergyLandscape/' + roi + '/HC_onlyMW/'
-if os.path.isdir(fig_dir)==False: os.mkdir(fig_dir)
 
-mat = scipy.io.loadmat(basin_dir + roi + '/HC_onlyMW/LocalMin_Summary.mat')
+mat = scipy.io.loadmat(basin_dir + roi + '/LocalMin_Summary.mat')
 tmp = np.reshape(mat['vectorList'][:,mat['LocalMinIndex']-1],[len(mat['vectorList']),len(mat['LocalMinIndex'])])
 brain_activity_pattern = pd.DataFrame(tmp,index=network)
 brain_activity_pattern.columns = ['State 1','State 2']
@@ -125,29 +112,18 @@ all_patterns = np.reshape(mat['vectorList'],[mat['vectorList'].shape[0],mat['vec
 all_brain_activity_pattern = pd.DataFrame(all_patterns,index=network)
 all_brain_activity_pattern = all_brain_activity_pattern.reindex(index=net_order)
 
-# metric='euclidean'
-# metric='mahalanobis'
 metric='hamming'
-
-# method='single'
 method='complete'
-# method='average'
-# method='ward'
-# method='weighted'
-# method='centroid'
 
 fig0 = plt.figure(figsize=(12,6))
 fig0 = sns.heatmap(all_brain_activity_pattern.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig0.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][0][0]-1]-1] for e in row], fontsize=15)
 fig0.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state1.png')
+
 fig1 = plt.figure(figsize=(12,6))
 fig1 = sns.heatmap(all_brain_activity_pattern.iloc[:,mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1],cbar = False,cmap='Pastel1_r', linewidths=.3)
 fig1.set_xticklabels([e for row in np.round(mat['E'],2)[mat['AdjacentList'][mat['LocalMinIndex'][1][0]-1]-1] for e in row], fontsize=15)
 fig1.set_xlabel('Energy')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Adjuscent_Energy_state2.png')
 
 MyPalette = ["#67a9cf","#ef8a62"]
 n_clusters=2
@@ -156,17 +132,13 @@ ac = AgglomerativeClustering(n_clusters=n_clusters,
                             linkage=method)
 cluster = ac.fit_predict(brain_activity_pattern.T)
 
-# demographic data
-demo = pd.read_csv(glob.glob(top_dir + '/code/participants_HC.tsv')[0],delimiter='\t')
-subs = demo['participants_id']
 
 # extract signals
 DATA = pd.DataFrame()
 MW_sub = pd.DataFrame()
 for sub_i in subs:
-    nv_files = glob.glob(source_dir + sub_i + '*task-gradCPTMW*_desc-confounds_regressors.tsv');nv_files.sort()
-    task_files = glob.glob(source_dir + sub_i +'*task-gradCPTMW*events.tsv');task_files.sort()
-    data_files = glob.glob(basin_dir + roi + '/HC_onlyMW/*' + sub_i + '*_BN.csv');data_files.sort()
+    task_files = glob.glob(events_dir + sub_i +'*task-gradCPTMW*events.tsv');task_files.sort()
+    data_files = glob.glob(basin_dir + roi + '/*' + sub_i + '*_BN.csv');data_files.sort()
 
     DATA_sub = pd.DataFrame()
     state_run = pd.Series()
@@ -177,9 +149,8 @@ for sub_i in subs:
         MW = taskinfo['ThoughtProbe']
         MW = MW.loc[np.where(MW)]
         mw_sessions = mw_sessions.append(pd.Series(MW))
-        nv = pd.read_csv(nv_files[num_file_i], delimiter='\t')
         data = pd.read_csv(data_files[num_file_i],header=None)
-        num_vol = nv.shape[0]
+        num_vol = data.shape[0]
         for onset_time in taskinfo['onset']:
             belong = CheckWhere(num_vol,tr,onset_time)
             state_run = state_run.append(data[belong].iloc[0])
@@ -219,8 +190,6 @@ fig.set_ylim(0,65)
 fig.set_ylabel("Percentage of total time", fontsize=15)
 fig.legend('')
 fig.set_xlabel("", fontsize=15) 
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/total_time_state_all.png')
 
 ## comparing of VTC
 NEWVTCDATA = pd.DataFrame()
@@ -262,13 +231,16 @@ DATA_DPRIME['CR_state2'] = DATA.query('summary_state==1').groupby(['subid'])['Co
 DATA_DPRIME['FA_state2'] = DATA.query('summary_state==1').groupby(['subid'])['OmissionError'].value_counts().unstack()[1].fillna(0)
 
 
-dprime1 = []
-dprime2 = []
+dprime1 = [];hit_rate1 = [];fa_rate1 = [];criterion1 = []
+dprime2 = [];hit_rate2 = [];fa_rate2 = [];criterion2 = []
+
 for numsub_i, sub_i in enumerate(subs):
     out_dmn = SDT(DATA_DPRIME['HIT_state1'][numsub_i],DATA_DPRIME['MISS_state1'][numsub_i],DATA_DPRIME['FA_state1'][numsub_i],DATA_DPRIME['CR_state1'][numsub_i])
-    dprime1.append(out_dmn['d'])
+    dprime1.append(out_dmn['d']);hit_rate1.append(out_dmn['hit_rate']);fa_rate1.append(out_dmn['fa_rate']);criterion1.append(out_dmn['c']);
+
     out_dan = SDT(DATA_DPRIME['HIT_state2'][numsub_i],DATA_DPRIME['MISS_state2'][numsub_i],DATA_DPRIME['FA_state2'][numsub_i],DATA_DPRIME['CR_state2'][numsub_i])
-    dprime2.append(out_dan['d'])
+    dprime2.append(out_dan['d']);hit_rate2.append(out_dan['hit_rate']);fa_rate2.append(out_dan['fa_rate']);criterion2.append(out_dan['c']);
+
 
 NEWDATA_DPRIME = pd.DataFrame()
 NEWDATA_DPRIME['State 1'] = dprime1
@@ -296,18 +268,6 @@ plt.plot([0,1],NEWDATA_MW.T,color='black',alpha=0.3)
 ax.set_ylim(0, 80)
 ax.set_ylabel("Mind wandering score", fontsize=15) #title
 ax.set_xlabel("") #title
-if save_flag==1:plt.savefig(fig_dir + '/Summary_PerformanceAnd_all.pdf')
-if save_flag==1:plt.savefig(fig_dir + '/Summary_PerformanceAnd_all.png')
-
-
-# print(stats.wilcoxon(DATA_scat_VTC.query('variable=="State 1"')["value"],DATA_scat_VTC.query('variable=="State 2"')["value"]))
-# print(stats.wilcoxon(DATA_scat_RT.query('variable=="State 1"')["value"],DATA_scat_RT.query('variable=="State 2"')["value"]))
-# print(stats.wilcoxon(DATA_scat_dprime.query('variable=="State 1"')["value"],DATA_scat_dprime.query('variable=="State 2"')["value"]))
-
-# print(stats.ttest_rel(DATA_scat_VTC.query('variable=="State 1"')["value"],DATA_scat_VTC.query('variable=="State 2"')["value"]))
-# print(stats.ttest_rel(DATA_scat_RT.query('variable=="State 1"')["value"],DATA_scat_RT.query('variable=="State 2"')["value"]))
-# print(stats.ttest_rel(DATA_scat_dprime.query('variable=="State 1"')["value"],DATA_scat_dprime.query('variable=="State 2"')["value"]))
-# print(stats.ttest_rel(DATA_scat_MW.query('variable=="State 1"')["value"],DATA_scat_MW.query('variable=="State 2"')["value"]))
 
 d_VTC = CalculateEffect(DATA_scat_VTC.query('variable=="State 1"')["value"].reset_index(drop=True),DATA_scat_VTC.query('variable=="State 2"')["value"].reset_index(drop=True))
 print(stats.ttest_rel(DATA_scat_VTC.query('variable=="State 1"')["value"],DATA_scat_VTC.query('variable=="State 2"')["value"]),d_VTC)
@@ -320,37 +280,3 @@ print(stats.ttest_rel(DATA_scat_dprime.query('variable=="State 1"')["value"],DAT
 
 d_mw = CalculateEffect(DATA_scat_MW.query('variable=="State 1"')["value"].reset_index(drop=True),DATA_scat_MW.query('variable=="State 2"')["value"].reset_index(drop=True))
 print(stats.ttest_rel(DATA_scat_MW.query('variable=="State 1"')["value"],DATA_scat_MW.query('variable=="State 2"')["value"]),d_mw)
-
-
-tmp = DATA.query('summary_state==0').groupby(['subid','session'])['CorrectOmission'].value_counts().unstack()[1].fillna(0).reset_index()
-DATA_DPRIME_DMN = pd.DataFrame()
-DATA_DPRIME_DMN['subid'] = tmp.subid
-DATA_DPRIME_DMN['session'] = tmp.session
-DATA_DPRIME_DMN['HIT'] = DATA.query('summary_state==0').groupby(['subid','session'])['CorrectOmission'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DMN['MISS'] = DATA.query('summary_state==0').groupby(['subid','session'])['CommissionError'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DMN['CR'] = DATA.query('summary_state==0').groupby(['subid','session'])['CorrectCommission'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DMN['FA'] = DATA.query('summary_state==0').groupby(['subid','session'])['OmissionError'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DMN['VTC'] = DATA.query('summary_state==0').groupby(['subid','session'])['VarianceTimeCourse'].mean().reset_index()['VarianceTimeCourse']
-DATA_DPRIME_DMN['state'] = 'DMN'
-DATA_DPRIME_DAN = pd.DataFrame()
-DATA_DPRIME_DAN['subid'] = tmp.subid
-DATA_DPRIME_DAN['session'] = tmp.session
-DATA_DPRIME_DAN['HIT'] = DATA.query('summary_state==1').groupby(['subid','session'])['CorrectOmission'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DAN['MISS'] = DATA.query('summary_state==1').groupby(['subid','session'])['CommissionError'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DAN['CR'] = DATA.query('summary_state==1').groupby(['subid','session'])['CorrectCommission'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DAN['FA'] = DATA.query('summary_state==1').groupby(['subid','session'])['OmissionError'].value_counts().unstack()[1].fillna(0).reset_index()[1]
-DATA_DPRIME_DAN['VTC'] = DATA.query('summary_state==1').groupby(['subid','session'])['VarianceTimeCourse'].mean().reset_index()['VarianceTimeCourse']
-DATA_DPRIME_DAN['state'] = 'DAN'
-
-DATA_DPRIME = pd.concat([DATA_DPRIME_DMN,DATA_DPRIME_DAN]).reset_index(drop=True)
-
-dprime = []
-for numsub_i in range(len(DATA_DPRIME)):
-    out = SDT(DATA_DPRIME['HIT'][numsub_i],DATA_DPRIME['MISS'][numsub_i],DATA_DPRIME['FA'][numsub_i],DATA_DPRIME['CR'][numsub_i])
-    dprime.append(out['d'])
-
-DATA_DPRIME['dprime']=dprime
-
-# import statsmodels.api as sm
-# sm.MixedLM.from_formula("dprime ~ state", DATA_DPRIME, groups=DATA_DPRIME["subid"]).fit().summary()
-# sm.MixedLM.from_formula("VTC ~ state", DATA_DPRIME, groups=DATA_DPRIME["subid"]).fit().summary()

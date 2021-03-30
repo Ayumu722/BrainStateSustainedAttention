@@ -1,0 +1,7 @@
+Visual
+SomatoMotor
+DorsalAttention
+Salience
+Limbic
+PrefrontalControl
+DefaultMode

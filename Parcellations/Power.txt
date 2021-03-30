@@ -1,0 +1,15 @@
+Auditory
+Cerebellar
+Cingulo-opercular Task Control
+Default mode
+Dorsal attention
+Fronto-parietal Task Control
+Memory retrieval?
+Salience
+Sensory/somatomotor Hand
+Sensory/somatomotor Mouth
+Subcortical
+Uncertain
+Ventral attention
+Visual
+
